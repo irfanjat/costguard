@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+dist*/
+*.zip
+.ruff_cache/
+.pytest_cache/
+.terraform/
+terraform.tfstate*
+terraform.tfvars
+*.tfvars
+.venv/
+response.json

@@ -1,0 +1,76 @@
+name: Deploy CostGuard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+  AWS_REGION: us-east-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  lint-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check src/ tests/
+
+      - name: Test
+        run: pytest -v tests/
+
+  deploy:
+    name: Deploy to AWS
+    needs: lint-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Package Lambda
+        run: make package
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: terraform
+        env:
+          TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: terraform
+        env:
+          TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}

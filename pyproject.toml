@@ -1,0 +1,28 @@
+[project]
+name = "costguard"
+version = "0.1.0"
+description = "Cloud cost anomaly detection and auto-remediation"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.35.0",
+    "botocore>=1.35.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.4.0",
+    "pytest>=8.0.0",
+    "pytest-mock>=3.14.0",
+    "moto>=5.0.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
